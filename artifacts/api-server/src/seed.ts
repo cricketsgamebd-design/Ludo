@@ -37,13 +37,32 @@ async function seed() {
     console.log(`  Bundle ${b.label} done`);
   }
 
-  const [niloy] = await db.select().from(usersTable).limit(1);
+  // Seed rich notifications for niloy (first test user after admin)
+  const [, niloy] = await db.select().from(usersTable).limit(2);
   if (niloy) {
-    await db.insert(notificationsTable).values({
-      userId: niloy.id, title: "Welcome to Ludo Game!",
-      message: "New tournaments are live. Check the store for amazing coin deals!",
-      notifType: "welcome", isRead: false,
-    }).onConflictDoNothing();
+    const notifs = [
+      { title: "লুডো গেমে স্বাগতম! 🎉", message: "নতুন টুর্নামেন্ট শুরু হয়েছে। স্টোরে দেখুন দারুণ অফার!", notifType: "welcome" },
+      { title: "টুর্নামেন্ট শুরু হচ্ছে!", message: "Summer Ludo Championship আগামীকাল শুরু। প্রস্তুত থাকুন!", notifType: "tournament_start" },
+      { title: "ম্যাচ রেডি ✅", message: "আপনার ম্যাচ রুম তৈরি! Room #2847 এ যোগ দিন।", notifType: "match_ready" },
+      { title: "বন্ধু অনলাইনে 👥", message: "Rakib এখন অনলাইনে আছে। এখনই চ্যালেঞ্জ করুন!", notifType: "friend_online" },
+      { title: "পুরস্কার পেয়েছেন! 🎁", message: "Daily Login Bonus: ৫০০ কয়েন আপনার অ্যাকাউন্টে যোগ হয়েছে।", notifType: "reward_received" },
+      { title: "ডিপোজিট সফল 💰", message: "৫,০০০ কয়েন সফলভাবে আপনার অ্যাকাউন্টে যোগ হয়েছে।", notifType: "deposit_success" },
+      { title: "উইথড্র সম্পন্ন", message: "আপনার উইথড্র অনুরোধ প্রক্রিয়াধীন। ২৪ ঘণ্টার মধ্যে হবে।", notifType: "withdrawal_success" },
+      { title: "অ্যাপ আপডেট 🔄", message: "লুডো গেম v1.1.0 — নতুন গেম মোড ও বাগ ফিক্স।", notifType: "update_notice" },
+      { title: "রক্ষণাবেক্ষণ নোটিশ 🔧", message: "রাত ২টা থেকে ৪টা পর্যন্ত সার্ভার মেইনটেন্যান্স চলবে।", notifType: "maintenance_notice" },
+      { title: "বন্ধুর অনুরোধ 👤", message: "Tania আপনাকে বন্ধু হিসেবে যোগ করতে চাইছে।", notifType: "friend_request" },
+      { title: "ম্যাচে আমন্ত্রণ 🎮", message: "Sumon আপনাকে একটি ম্যাচে চ্যালেঞ্জ করেছে!", notifType: "match_invite" },
+      { title: "টুর্নামেন্ট বার্তা 🏆", message: "Quarter Final এ আপনার পরবর্তী ম্যাচ আজ রাত ৮টায়।", notifType: "tournament_message" },
+      { title: "উপহার পেয়েছেন! 🎀", message: "Mitu আপনাকে ২০০ কয়েন উপহার পাঠিয়েছে।", notifType: "gift" },
+      { title: "অ্যাডমিন ঘোষণা 📢", message: "বিশেষ ইদ অফার: সব কয়েন বান্ডেলে ৩০% ছাড়!", notifType: "admin" },
+    ];
+
+    for (const n of notifs) {
+      await db.insert(notificationsTable).values({
+        userId: niloy.id, ...n, isRead: false,
+      }).onConflictDoNothing();
+    }
+    console.log(`  Seeded ${notifs.length} notifications for ${niloy.username}`);
   }
 
   console.log("Seed complete!");

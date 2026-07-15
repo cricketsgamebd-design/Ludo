@@ -24,12 +24,7 @@ function UnreadBadge() {
 }
 
 export default function Layout({ children, user }: LayoutProps) {
-  const [location, setLocation] = useLocation();
-
-  const handleLogout = () => {
-    localStorage.removeItem('ludo_token');
-    window.location.href = '/';
-  };
+  const [location] = useLocation();
 
   return (
     <div className="app-container">
@@ -37,10 +32,14 @@ export default function Layout({ children, user }: LayoutProps) {
       <div className="header">
         {user ? (
           <>
-            <div className="avatar">
-              <div className="avatar-inner">👤</div>
-              <div className="level-badge">{user.level}</div>
-            </div>
+            <Link href="/profile">
+              <div style={{ cursor: 'pointer', position: 'relative' }}>
+                <div className="avatar">
+                  <div className="avatar-inner">👤</div>
+                  <div className="level-badge">{user.level}</div>
+                </div>
+              </div>
+            </Link>
             <div style={{ color: '#FFFFFF', fontWeight: 600, fontSize: '15px', paddingLeft: '6px', display: 'flex', flexDirection: 'column', flex: 1 }}>
               <div className="flex items-center gap-2">
                 {user.username}
@@ -117,16 +116,17 @@ export default function Layout({ children, user }: LayoutProps) {
         </Link>
 
         {user ? (
-          <div
-            className={`nav-item ${location === '/admin' ? 'active' : ''}`}
-            onClick={() => user.isAdmin ? setLocation('/admin') : handleLogout()}
-            style={{ cursor: 'pointer' }}
-          >
-            {user.isAdmin
-              ? <Settings size={22} className={location === '/admin' ? 'text-[#FFC92C]' : ''} />
-              : <User size={22} />}
-            <span>{user.isAdmin ? 'ADMIN' : 'LOGOUT'}</span>
-          </div>
+          user.isAdmin ? (
+            <Link href="/admin" className={`nav-item ${location === '/admin' ? 'active' : ''}`}>
+              <Settings size={22} className={location === '/admin' ? 'text-[#FFC92C]' : ''} />
+              <span>ADMIN</span>
+            </Link>
+          ) : (
+            <Link href="/profile" className={`nav-item ${location === '/profile' ? 'active' : ''}`}>
+              <User size={22} className={location === '/profile' ? 'text-[#FFC92C]' : ''} />
+              <span>PROFILE</span>
+            </Link>
+          )
         ) : (
           <Link href="/register" className="nav-item">
             <LogIn size={22} />

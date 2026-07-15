@@ -11,6 +11,7 @@ import Store from './pages/Store';
 import Notifications from './pages/Notifications';
 import Rankings from './pages/Rankings';
 import Admin from './pages/Admin';
+import Profile from './pages/Profile';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -56,6 +57,7 @@ function AppContent() {
         <Route path="/store" component={Store} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/rankings" component={Rankings} />
+        <Route path="/profile" component={Profile} />
         {user?.isAdmin && <Route path="/admin" component={Admin} />}
         <Route>
           <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
