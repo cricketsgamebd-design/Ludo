@@ -5,7 +5,9 @@
  * Ludo Game API
  * OpenAPI spec version: 0.2.0
  */
+import type { User } from './user';
 
-export interface HealthStatus {
-  status: string;
+export interface AuthResponse {
+  user: User;
+  token: string;
 }

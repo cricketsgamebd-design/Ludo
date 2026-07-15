@@ -1,22 +1,25 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: Ludo Game API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: auth
+  - name: store
+  - name: notifications
+  - name: rankings
+  - name: invite
+  - name: friends
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +27,302 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerUser
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserRegistration"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Bad request
+
+  /auth/login:
+    post:
+      operationId: loginUser
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserLogin"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Unauthorized
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Unauthorized
+
+  /store/bundles:
+    get:
+      operationId: listBundles
+      tags: [store]
+      summary: List all coin bundles
+      responses:
+        "200":
+          description: List of bundles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CoinBundle"
+    post:
+      operationId: createBundle
+      tags: [store]
+      summary: Create a coin bundle (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoinBundleInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoinBundle"
+
+  /store/bundles/{id}:
+    put:
+      operationId: updateBundle
+      tags: [store]
+      summary: Update a bundle (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CoinBundleUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CoinBundle"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteBundle
+      tags: [store]
+      summary: Delete a bundle (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+
+  /store/purchase:
+    post:
+      operationId: purchaseBundle
+      tags: [store]
+      summary: Purchase a coin bundle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PurchaseInput"
+      responses:
+        "200":
+          description: Purchase successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseResult"
+        "400":
+          description: Bad request
+        "404":
+          description: Bundle not found
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: Get user notifications
+      responses:
+        "200":
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/unread-count:
+    get:
+      operationId: getUnreadCount
+      tags: [notifications]
+      summary: Get unread notification count
+      responses:
+        "200":
+          description: Unread count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadCount"
+
+  /notifications/read-all:
+    put:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "200":
+          description: All marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnreadCount"
+
+  /notifications/{id}/read:
+    put:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark one notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+        "404":
+          description: Not found
+
+  /rankings/global:
+    get:
+      operationId: getGlobalRankings
+      tags: [rankings]
+      summary: Get global rankings
+      responses:
+        "200":
+          description: Global ranking list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankingEntry"
+
+  /rankings/friends:
+    get:
+      operationId: getFriendsRankings
+      tags: [rankings]
+      summary: Get friends rankings
+      responses:
+        "200":
+          description: Friends ranking list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RankingEntry"
+
+  /invite/code:
+    get:
+      operationId: getInviteCode
+      tags: [invite]
+      summary: Get current user's invite info
+      responses:
+        "200":
+          description: Invite info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InviteInfo"
+
+  /friends:
+    get:
+      operationId: listFriends
+      tags: [friends]
+      summary: List friends
+      responses:
+        "200":
+          description: Friends list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Friend"
+    post:
+      operationId: addFriend
+      tags: [friends]
+      summary: Add a friend by username
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FriendInput"
+      responses:
+        "201":
+          description: Friend added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Friend"
+        "400":
+          description: Bad request
+        "404":
+          description: User not found
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +330,142 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    User:
+      type: object
+      properties:
+        id:         { type: integer }
+        username:   { type: string }
+        email:      { type: string }
+        coins:      { type: integer }
+        level:      { type: integer }
+        inviteCode: { type: string }
+        isAdmin:    { type: boolean }
+        createdAt:  { type: string, format: date-time }
+      required: [id, username, email, coins, level, inviteCode, isAdmin, createdAt]
+
+    UserRegistration:
+      type: object
+      properties:
+        username:   { type: string, minLength: 3 }
+        email:      { type: string }
+        password:   { type: string, minLength: 6 }
+        inviteCode: { type: ["string", "null"] }
+      required: [username, email, password]
+
+    UserLogin:
+      type: object
+      properties:
+        email:    { type: string }
+        password: { type: string }
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        user:  { $ref: "#/components/schemas/User" }
+        token: { type: string }
+      required: [user, token]
+
+    CoinBundle:
+      type: object
+      properties:
+        id:               { type: integer }
+        coinsAmount:      { type: integer }
+        priceBdt:         { type: number }
+        originalPriceBdt: { type: ["number", "null"] }
+        discountPercent:  { type: ["integer", "null"] }
+        label:            { type: string }
+        isActive:         { type: boolean }
+        sortOrder:        { type: integer }
+        createdAt:        { type: string, format: date-time }
+      required: [id, coinsAmount, priceBdt, originalPriceBdt, discountPercent, label, isActive, sortOrder, createdAt]
+
+    CoinBundleInput:
+      type: object
+      properties:
+        coinsAmount:      { type: integer }
+        priceBdt:         { type: number }
+        originalPriceBdt: { type: ["number", "null"] }
+        discountPercent:  { type: ["integer", "null"] }
+        label:            { type: string }
+        sortOrder:        { type: integer }
+        isActive:         { type: boolean }
+      required: [coinsAmount, priceBdt, label, sortOrder]
+
+    CoinBundleUpdate:
+      type: object
+      properties:
+        coinsAmount:      { type: integer }
+        priceBdt:         { type: number }
+        originalPriceBdt: { type: ["number", "null"] }
+        discountPercent:  { type: ["integer", "null"] }
+        label:            { type: string }
+        sortOrder:        { type: integer }
+        isActive:         { type: boolean }
+
+    PurchaseInput:
+      type: object
+      properties:
+        bundleId: { type: integer }
+      required: [bundleId]
+
+    PurchaseResult:
+      type: object
+      properties:
+        coinsAdded:  { type: integer }
+        newBalance:  { type: integer }
+        bundleLabel: { type: string }
+      required: [coinsAdded, newBalance, bundleLabel]
+
+    Notification:
+      type: object
+      properties:
+        id:        { type: integer }
+        userId:    { type: integer }
+        title:     { type: string }
+        message:   { type: string }
+        notifType: { type: string }
+        isRead:    { type: boolean }
+        createdAt: { type: string, format: date-time }
+      required: [id, userId, title, message, notifType, isRead, createdAt]
+
+    UnreadCount:
+      type: object
+      properties:
+        count: { type: integer }
+      required: [count]
+
+    RankingEntry:
+      type: object
+      properties:
+        rank:     { type: integer }
+        userId:   { type: integer }
+        username: { type: string }
+        coins:    { type: integer }
+        level:    { type: integer }
+      required: [rank, userId, username, coins, level]
+
+    InviteInfo:
+      type: object
+      properties:
+        inviteCode:   { type: string }
+        totalInvited: { type: integer }
+        coinsEarned:  { type: integer }
+      required: [inviteCode, totalInvited, coinsEarned]
+
+    Friend:
+      type: object
+      properties:
+        id:       { type: integer }
+        username: { type: string }
+        coins:    { type: integer }
+        level:    { type: integer }
+      required: [id, username, coins, level]
+
+    FriendInput:
+      type: object
+      properties:
+        username: { type: string }
+      required: [username]
