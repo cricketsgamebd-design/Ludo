@@ -6,8 +6,8 @@ import { requireAuth } from "../lib/auth";
 
 const router: IRouter = Router();
 
-// GET /rankings/global
-router.get("/rankings/global", requireAuth, async (_req, res): Promise<void> => {
+// GET /rankings/global — public
+router.get("/rankings/global", async (_req, res): Promise<void> => {
   const users = await db.select().from(usersTable)
     .orderBy(desc(usersTable.coins))
     .limit(100);

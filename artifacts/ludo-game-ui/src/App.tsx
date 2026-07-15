@@ -15,7 +15,7 @@ import Admin from './pages/Admin';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: false,           // no retries globally — 401 = not logged in
       refetchOnWindowFocus: false,
     },
   },
@@ -23,33 +23,21 @@ const queryClient = new QueryClient({
 
 function AppContent() {
   const [location, setLocation] = useLocation();
-  const { data: user, isLoading: isUserLoading, error } = useGetMe({
-    query: {
-      retry: false,
-      queryKey: getGetMeQueryKey(),
-    }
+
+  // Auth check — never blocks rendering. user = undefined while loading, null on error.
+  const { data: user } = useGetMe({
+    query: { queryKey: getGetMeQueryKey() },
   });
 
+  // If already logged in, don't show login/register
   useEffect(() => {
-    if (!isUserLoading) {
-      if (error || !user) {
-        if (location !== '/login' && location !== '/register') {
-          setLocation('/login');
-        }
-      }
+    if (user && (location === '/login' || location === '/register')) {
+      setLocation('/');
     }
-  }, [user, isUserLoading, error, location, setLocation]);
+  }, [user, location, setLocation]);
 
-  if (isUserLoading) {
-    return (
-      <div className="app-container items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#4FA6FF]"></div>
-      </div>
-    );
-  }
-
-  // Auth pages don't need the global layout with bottom nav
-  if (!user && (location === '/login' || location === '/register')) {
+  // Auth pages
+  if (location === '/login' || location === '/register') {
     return (
       <div className="app-container">
         <Switch>
@@ -60,27 +48,23 @@ function AppContent() {
     );
   }
 
-  // Once authenticated, show layout with bottom nav
-  if (user) {
-    return (
-      <Layout user={user}>
-        <Switch>
-          <Route path="/" component={Home} />
-          <Route path="/store" component={Store} />
-          <Route path="/notifications" component={Notifications} />
-          <Route path="/rankings" component={Rankings} />
-          {user.isAdmin && <Route path="/admin" component={Admin} />}
-          <Route>
-            <div className="flex-1 flex items-center justify-center text-white">
-              <h2>404 - Page Not Found</h2>
-            </div>
-          </Route>
-        </Switch>
-      </Layout>
-    );
-  }
-
-  return null;
+  // Main app — always visible. user is null/undefined for guests, User object when logged in.
+  return (
+    <Layout user={user ?? null}>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/store" component={Store} />
+        <Route path="/notifications" component={Notifications} />
+        <Route path="/rankings" component={Rankings} />
+        {user?.isAdmin && <Route path="/admin" component={Admin} />}
+        <Route>
+          <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
+            <h2>404 – Page Not Found</h2>
+          </div>
+        </Route>
+      </Switch>
+    </Layout>
+  );
 }
 
 export default function App() {

@@ -1,18 +1,32 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { useGetGlobalRankings, useGetFriendsRankings, getGetGlobalRankingsQueryKey, getGetFriendsRankingsQueryKey } from '@workspace/api-client-react';
+import { useLocation } from 'wouter';
+import {
+  useGetGlobalRankings, useGetFriendsRankings,
+  useGetMe,
+  getGetGlobalRankingsQueryKey, getGetFriendsRankingsQueryKey, getGetMeQueryKey,
+} from '@workspace/api-client-react';
 import { Trophy, Crown, Medal } from 'lucide-react';
+import LoginGate from '../components/LoginGate';
 
 export default function Rankings() {
   const [tab, setTab] = useState<'GLOBAL' | 'FRIENDS'>('GLOBAL');
-  
+  const [showLoginGate, setShowLoginGate] = useState(false);
+
+  const { data: user } = useGetMe({ query: { retry: false, queryKey: getGetMeQueryKey() } });
+
   const { data: globalData, isLoading: loadingGlobal } = useGetGlobalRankings({
     query: { enabled: tab === 'GLOBAL', queryKey: getGetGlobalRankingsQueryKey() }
   });
-  
+
   const { data: friendsData, isLoading: loadingFriends } = useGetFriendsRankings({
-    query: { enabled: tab === 'FRIENDS', queryKey: getGetFriendsRankingsQueryKey() }
+    query: { enabled: tab === 'FRIENDS' && !!user, queryKey: getGetFriendsRankingsQueryKey() }
   });
+
+  const handleFriendsTab = () => {
+    if (!user) { setShowLoginGate(true); return; }
+    setTab('FRIENDS');
+  };
 
   const isLoading = tab === 'GLOBAL' ? loadingGlobal : loadingFriends;
   const data = tab === 'GLOBAL' ? globalData : friendsData;
@@ -28,74 +42,115 @@ export default function Rankings() {
 
   const getRowBg = (rank: number) => {
     if (rank === 1) return 'bg-gradient-to-r from-[#6A3A1A] to-[#2C170C] border-[#B76818]';
-    if (rank === 2) return 'bg-gradient-to-r from-[#2A3F5A] to-[#111A2C] border-[#546E94]';
-    if (rank === 3) return 'bg-gradient-to-r from-[#5A2C1A] to-[#2C1208] border-[#A85834]';
-    return 'bg-[#0B1038] border-[#3A2A9D]';
+    if (rank === 2) return 'bg-gradient-to-r from-[#2A2A3A] to-[#18182A] border-[#707090]';
+    if (rank === 3) return 'bg-gradient-to-r from-[#3A2A0E] to-[#22160A] border-[#7A5020]';
+    return 'bg-[rgba(255,255,255,0.03)] border-[rgba(255,255,255,0.07)]';
   };
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 pb-0 sticky top-0 z-10 bg-[#0F0C1F]">
-        <h1 className="text-2xl font-black text-white italic tracking-wider text-center mb-4 flex items-center justify-center gap-2">
-          <Trophy className="text-[#FFC92C]" /> LEADERBOARD
-        </h1>
-        
-        <div className="flex rounded-xl p-1 bg-[#060A2D] border border-[#3A2A9D] mb-4">
-          <button 
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${tab === 'GLOBAL' ? 'bg-[#2A7FEF] text-white shadow-[0_0_10px_#2A7FEF]' : 'text-gray-400'}`}
-            onClick={() => setTab('GLOBAL')}
-          >
-            GLOBAL
-          </button>
-          <button 
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${tab === 'FRIENDS' ? 'bg-[#1EA63D] text-white shadow-[0_0_10px_#1EA63D]' : 'text-gray-400'}`}
-            onClick={() => setTab('FRIENDS')}
-          >
-            FRIENDS
-          </button>
-        </div>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pb-6">
+      {/* Tab Switcher */}
+      <div style={{ display: 'flex', margin: '14px 12px 12px', borderRadius: '12px', overflow: 'hidden', border: '1px solid #2A2060', background: '#0A0720' }}>
+        <button
+          onClick={() => setTab('GLOBAL')}
+          style={{
+            flex: 1, padding: '11px', fontWeight: 700, fontSize: '13px', border: 'none', cursor: 'pointer',
+            background: tab === 'GLOBAL' ? 'linear-gradient(90deg, #4FA6FF, #7B4FFF)' : 'transparent',
+            color: tab === 'GLOBAL' ? '#fff' : '#5060A0',
+            transition: 'all 0.2s',
+          }}
+        >
+          🌍 GLOBAL
+        </button>
+        <button
+          onClick={handleFriendsTab}
+          style={{
+            flex: 1, padding: '11px', fontWeight: 700, fontSize: '13px', border: 'none', cursor: 'pointer',
+            background: tab === 'FRIENDS' ? 'linear-gradient(90deg, #4BFF63, #0D6B2E)' : 'transparent',
+            color: tab === 'FRIENDS' ? '#fff' : '#5060A0',
+            transition: 'all 0.2s',
+          }}
+        >
+          🏅 FRIENDS {!user && <span style={{ fontSize: '10px' }}>🔒</span>}
+        </button>
       </div>
 
-      <div className="p-3 pb-20 flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FFC92C]"></div>
-          </div>
-        ) : data?.length === 0 ? (
-          <div className="text-center text-gray-500 py-12">No rankings available.</div>
-        ) : (
-          <div className="space-y-2">
-            {data?.map((entry, i) => (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                key={`${entry.userId}-${tab}`}
-                className={`flex items-center p-3 rounded-xl border ${getRowBg(entry.rank)}`}
-              >
-                <div className="w-10 flex justify-center items-center flex-shrink-0">
-                  {getRankIcon(entry.rank)}
-                </div>
-                
-                <div className="avatar w-10 h-10 border-2 mx-3 flex-shrink-0" style={{ transform: 'scale(0.8)' }}>
-                  <div className="avatar-inner text-sm">👤</div>
-                </div>
-                
-                <div className="flex-1 min-w-0">
-                  <div className="font-bold text-white text-[15px] truncate">{entry.username}</div>
-                  <div className="text-[11px] text-[#4FA6FF] font-mono">Lv. {entry.level}</div>
-                </div>
-                
-                <div className="flex flex-col items-end flex-shrink-0">
-                  <div className="text-[#FFC92C] font-bold text-sm flex items-center gap-1">
-                    🪙 {entry.coins >= 1000 ? `${(entry.coins/1000).toFixed(1)}k` : entry.coins}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+      {isLoading && (
+        <div style={{ padding: '40px', textAlign: 'center' }}>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4FA6FF] mx-auto" />
+        </div>
+      )}
+
+      {tab === 'FRIENDS' && !user && (
+        <div style={{ padding: '40px 24px', textAlign: 'center', color: '#6070A0' }}>
+          <div style={{ fontSize: '40px', marginBottom: '12px' }}>🔒</div>
+          <p>Friends ranking দেখতে লগইন করুন।</p>
+        </div>
+      )}
+
+      {!isLoading && (data ?? []).length === 0 && (
+        <div style={{ padding: '40px 24px', textAlign: 'center', color: '#6070A0' }}>
+          <Trophy size={40} style={{ margin: '0 auto 12px' }} />
+          <p>কোনো তথ্য পাওয়া যায়নি।</p>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '0 10px' }}>
+        {(data ?? []).map((entry, i) => (
+          <motion.div
+            key={entry.userId}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.04 }}
+            className={`flex items-center gap-3 p-3 rounded-xl border ${getRowBg(entry.rank)}`}
+          >
+            {/* Rank */}
+            <div style={{ width: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {getRankIcon(entry.rank)}
+            </div>
+
+            {/* Avatar */}
+            <div style={{
+              width: '38px', height: '38px', borderRadius: '50%',
+              background: 'linear-gradient(135deg, #2A1060, #0A0520)',
+              border: entry.rank <= 3 ? '2px solid #C33BFF' : '1px solid #2A2060',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '18px', flexShrink: 0,
+            }}>
+              👤
+            </div>
+
+            {/* Name + level */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{
+                fontSize: '14px', fontWeight: 700,
+                color: entry.rank === 1 ? '#FFC92C' : '#fff',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>
+                {entry.username}
+                {user && entry.userId === user.id && (
+                  <span style={{ fontSize: '10px', color: '#4FA6FF', marginLeft: '6px' }}>YOU</span>
+                )}
+              </div>
+              <div style={{ fontSize: '11px', color: '#6070A0' }}>Level {entry.level}</div>
+            </div>
+
+            {/* Coins */}
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <div style={{ fontSize: '14px', fontWeight: 700, color: '#FFC92C' }}>
+                🪙 {entry.coins.toLocaleString()}
+              </div>
+            </div>
+          </motion.div>
+        ))}
       </div>
-    </div>
+
+      {showLoginGate && (
+        <LoginGate
+          message="Friends ranking দেখতে প্রথমে লগইন করুন।"
+          onClose={() => setShowLoginGate(false)}
+        />
+      )}
+    </motion.div>
   );
 }

@@ -1,127 +1,182 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  useListNotifications, 
-  useMarkAllNotificationsRead, 
+import {
+  useListNotifications,
+  useMarkAllNotificationsRead,
   useMarkNotificationRead,
+  useGetMe,
+  getGetMeQueryKey,
   getListNotificationsQueryKey,
-  getGetUnreadCountQueryKey
+  getGetUnreadCountQueryKey,
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Gift, Users, Trophy, BellRing, Check } from 'lucide-react';
+import { Gift, Users, Trophy, BellRing, Check, LogIn } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 export default function Notifications() {
+  const [, setLocation] = useLocation();
+  const { data: user } = useGetMe({ query: { retry: false, queryKey: getGetMeQueryKey() } });
   const { data: notifications, isLoading } = useListNotifications();
   const markAllMutation = useMarkAllNotificationsRead();
   const markOneMutation = useMarkNotificationRead();
   const queryClient = useQueryClient();
+
+  // Guest wall
+  if (!user) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 24px', textAlign: 'center' }}>
+        <div style={{ fontSize: '56px', marginBottom: '16px' }}>🔔</div>
+        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Notifications</h2>
+        <p style={{ fontSize: '14px', color: '#7080B0', marginBottom: '28px', lineHeight: '1.6' }}>
+          নোটিফিকেশন দেখতে আপনার অ্যাকাউন্টে লগইন করুন।
+        </p>
+        <button
+          onClick={() => setLocation('/register')}
+          style={{
+            width: '220px',
+            padding: '13px',
+            borderRadius: '50px',
+            border: 'none',
+            background: 'linear-gradient(90deg, #4FA6FF, #7B4FFF)',
+            color: '#fff',
+            fontWeight: 700,
+            fontSize: '15px',
+            cursor: 'pointer',
+            marginBottom: '10px',
+          }}
+        >
+          রেজিস্ট্রেশন করুন
+        </button>
+        <button
+          onClick={() => setLocation('/login')}
+          style={{
+            background: 'none',
+            border: '1.5px solid #3A2A7D',
+            borderRadius: '50px',
+            color: '#8090C0',
+            padding: '10px 28px',
+            fontSize: '14px',
+            cursor: 'pointer',
+          }}
+        >
+          লগইন করুন
+        </button>
+      </div>
+    );
+  }
 
   const handleMarkAll = () => {
     markAllMutation.mutate(undefined, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetUnreadCountQueryKey() });
-      }
+      },
     });
   };
 
-  const handleMarkRead = (id: number, isRead: boolean) => {
-    if (isRead) return;
+  const handleMarkOne = (id: number) => {
     markOneMutation.mutate({ id }, {
       onSuccess: () => {
-        // Update local cache optimistically
-        queryClient.setQueryData(getListNotificationsQueryKey(), (old: any) => {
-          if (!old) return old;
-          return old.map((n: any) => n.id === id ? { ...n, isRead: true } : n);
-        });
+        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
         queryClient.invalidateQueries({ queryKey: getGetUnreadCountQueryKey() });
-      }
+      },
     });
   };
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'GIFT': return <Gift className="text-[#FFC92C]" size={24} />;
-      case 'FRIEND_REQUEST': return <Users className="text-[#3FC5FF]" size={24} />;
-      case 'TOURNAMENT': return <Trophy className="text-[#C33BFF]" size={24} />;
-      default: return <BellRing className="text-gray-400" size={24} />;
+      case 'purchase': return <Gift size={20} className="text-[#FFC92C]" />;
+      case 'invite':   return <Users size={20} className="text-[#4BFF63]" />;
+      case 'welcome':  return <BellRing size={20} className="text-[#4FA6FF]" />;
+      default:         return <Trophy size={20} className="text-[#C33BFF]" />;
     }
   };
 
-  const getBgClass = (type: string) => {
-    switch (type) {
-      case 'GIFT': return 'from-[#6A3A1A] to-[#2C170C] border-[#B76818]';
-      case 'FRIEND_REQUEST': return 'from-[#0D4EA6] to-[#041C48] border-[#2A7FEF]';
-      case 'TOURNAMENT': return 'from-[#4A177B] to-[#18062F] border-[#8B27D9]';
-      default: return 'from-[#181136] to-[#0A071A] border-[#3A2A9D]';
-    }
-  };
-
-  const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
+  const unread = (notifications ?? []).filter(n => !n.isRead).length;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="p-4 flex items-center justify-between border-b border-[#3A2A9D] bg-[#0F0C1F] sticky top-0 z-10">
-        <h1 className="text-xl font-bold text-white flex items-center gap-2">
-          Inbox {unreadCount > 0 && <span className="bg-red-500 text-xs px-2 py-0.5 rounded-full">{unreadCount}</span>}
-        </h1>
-        {unreadCount > 0 && (
-          <button 
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="pb-6">
+      {/* Header row */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 16px 8px' }}>
+        <h2 style={{ fontSize: '18px', fontWeight: 700, color: '#fff' }}>
+          Notifications {unread > 0 && (
+            <span style={{ fontSize: '12px', background: '#C33BFF', borderRadius: '20px', padding: '2px 8px', marginLeft: '6px' }}>
+              {unread}
+            </span>
+          )}
+        </h2>
+        {unread > 0 && (
+          <button
             onClick={handleMarkAll}
-            disabled={markAllMutation.isPending}
-            className="text-xs text-[#4FA6FF] font-bold flex items-center gap-1 hover:text-white transition-colors"
+            style={{
+              display: 'flex', alignItems: 'center', gap: '5px',
+              background: 'rgba(79,166,255,0.15)', border: '1px solid #3A6AC0',
+              borderRadius: '20px', padding: '5px 12px',
+              color: '#4FA6FF', fontSize: '12px', fontWeight: 600, cursor: 'pointer',
+            }}
           >
-            <Check size={14} /> MARK ALL READ
+            <Check size={13} /> Mark all read
           </button>
         )}
       </div>
 
-      <div className="p-3 pb-20 flex-1 overflow-y-auto">
-        {isLoading ? (
-          <div className="flex justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4FA6FF]"></div>
-          </div>
-        ) : notifications?.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-500">
-            <BellRing size={48} className="mb-4 opacity-20" />
-            <p>No messages yet</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {notifications?.map((notif, i) => (
-              <motion.div
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.05 }}
-                key={notif.id}
-                onClick={() => handleMarkRead(notif.id, notif.isRead)}
-                className={`relative p-4 rounded-xl border-2 bg-gradient-to-r ${getBgClass(notif.notifType)} cursor-pointer overflow-hidden ${!notif.isRead ? 'shadow-[0_0_15px_rgba(255,255,255,0.1)]' : 'opacity-70'}`}
-              >
-                {!notif.isRead && (
-                  <div className="absolute top-3 right-3 w-3 h-3 bg-red-500 rounded-full shadow-[0_0_8px_#f00]"></div>
+      {isLoading && (
+        <div style={{ padding: '40px', textAlign: 'center', color: '#4FA6FF' }}>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#4FA6FF] mx-auto" />
+        </div>
+      )}
+
+      {!isLoading && (notifications ?? []).length === 0 && (
+        <div style={{ padding: '60px 24px', textAlign: 'center', color: '#6070A0' }}>
+          <BellRing size={40} style={{ margin: '0 auto 12px' }} />
+          <p>কোনো নোটিফিকেশন নেই।</p>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '0 12px' }}>
+        {(notifications ?? []).map((n, i) => (
+          <motion.div
+            key={n.id}
+            initial={{ opacity: 0, x: -12 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: i * 0.04 }}
+            onClick={() => !n.isRead && handleMarkOne(n.id)}
+            style={{
+              display: 'flex', alignItems: 'flex-start', gap: '12px',
+              padding: '14px',
+              borderRadius: '14px',
+              cursor: n.isRead ? 'default' : 'pointer',
+              background: n.isRead
+                ? 'rgba(255,255,255,0.03)'
+                : 'linear-gradient(135deg, rgba(79,166,255,0.12) 0%, rgba(123,79,255,0.08) 100%)',
+              border: n.isRead ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(79,166,255,0.3)',
+              boxShadow: n.isRead ? 'none' : '0 0 12px rgba(79,166,255,0.08)',
+            }}
+          >
+            <div style={{
+              width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.06)',
+            }}>
+              {getIcon(n.notifType)}
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '3px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 700, color: n.isRead ? '#B0B8D8' : '#fff' }}>
+                  {n.title}
+                </span>
+                {!n.isRead && (
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#4FA6FF', flexShrink: 0 }} />
                 )}
-                
-                <div className="flex gap-4 items-start">
-                  <div className="mt-1 flex-shrink-0">
-                    {getIcon(notif.notifType)}
-                  </div>
-                  <div className="flex-1 pr-6">
-                    <h3 className={`font-bold text-[15px] mb-1 ${!notif.isRead ? 'text-white' : 'text-gray-300'}`}>
-                      {notif.title}
-                    </h3>
-                    <p className="text-[13px] text-gray-400 leading-snug">
-                      {notif.message}
-                    </p>
-                    <div className="text-[10px] text-gray-500 mt-2 font-mono">
-                      {new Date(notif.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+              </div>
+              <p style={{ fontSize: '12px', color: '#6878A8', margin: 0, lineHeight: '1.5' }}>{n.message}</p>
+              <p style={{ fontSize: '11px', color: '#3D4870', margin: '4px 0 0', }}>
+                {new Date(n.createdAt).toLocaleDateString('bn-BD', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </motion.div>
+        ))}
       </div>
-    </div>
+    </motion.div>
   );
 }
