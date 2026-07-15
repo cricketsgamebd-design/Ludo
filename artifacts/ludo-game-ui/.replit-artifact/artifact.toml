@@ -1,0 +1,27 @@
+kind = "web"
+previewPath = "/"
+title = "Ludo Game UI"
+version = "1.0.0"
+id = "artifacts/ludo-game-ui"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21621
+
+[services.development]
+run = "pnpm --filter @workspace/ludo-game-ui run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/ludo-game-ui", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/ludo-game-ui/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21621"
+BASE_PATH = "/"
