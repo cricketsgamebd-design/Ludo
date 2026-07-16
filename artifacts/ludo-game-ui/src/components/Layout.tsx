@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'wouter';
-import { Home, ShoppingCart, Bell, User, Settings, LogIn } from 'lucide-react';
+import { Home, ShoppingCart, Bell, Settings, LogIn } from 'lucide-react';
 import type { User as UserType } from '@workspace/api-client-react';
 import { useGetUnreadCount, getGetUnreadCountQueryKey } from '@workspace/api-client-react';
 
@@ -32,7 +32,7 @@ export default function Layout({ children, user }: LayoutProps) {
       <div className="header">
         {user ? (
           <>
-            <Link href="/profile">
+            <Link href="/settings">
               <div style={{ cursor: 'pointer', position: 'relative' }}>
                 <div className="avatar">
                   <div className="avatar-inner">👤</div>
@@ -122,9 +122,9 @@ export default function Layout({ children, user }: LayoutProps) {
               <span>ADMIN</span>
             </Link>
           ) : (
-            <Link href="/profile" className={`nav-item ${location === '/profile' ? 'active' : ''}`}>
-              <User size={22} className={location === '/profile' ? 'text-[#FFC92C]' : ''} />
-              <span>PROFILE</span>
+            <Link href="/settings" className={`nav-item ${location === '/settings' ? 'active' : ''}`}>
+              <Settings size={22} className={location === '/settings' ? 'text-[#FFC92C]' : ''} />
+              <span>SETTINGS</span>
             </Link>
           )
         ) : (

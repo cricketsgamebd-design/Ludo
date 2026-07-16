@@ -57,7 +57,7 @@ function AppContent() {
         <Route path="/store" component={Store} />
         <Route path="/notifications" component={Notifications} />
         <Route path="/rankings" component={Rankings} />
-        <Route path="/profile" component={Profile} />
+        <Route path="/settings" component={Profile} />
         {user?.isAdmin && <Route path="/admin" component={Admin} />}
         <Route>
           <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', color: '#fff' }}>
